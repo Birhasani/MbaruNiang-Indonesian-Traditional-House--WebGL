@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Mbaru Niang 3D Model View</title>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="http://threejs.org/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+
+    <!-- Loader Model -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/FBXLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/MTLLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/OBJLoader.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/libs/fflate.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+      }
+
+      h1 {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        color: white;
+        z-index: 10;
+      }
+
+      #buttons {
+        display: flex;
+        position: absolute;
+        z-index: 10;
+        top: 80px;
+        left: 20px;
+      }
+
+      #startButton {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      #startButton:hover {
+        background-color: #45a049;
+      }
+
+      #resetButton {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #d10404;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      #resetButton:hover {
+        background-color: #9d0404;
+      }
+
+      #controls {
+        position: absolute;
+        top: 120px;
+        left: 20px;
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 10;
+      }
+
+      #controls h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      #controls p {
+        margin: 5px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Mbaru Niang 3D Model View</h1>
+    <div id="buttons">
+      <button id="startButton">Start First Person View</button>
+      <button id="resetButton">Reset Camera Position</button>
+    </div>
+
+    <div id="controls">
+      <h2>Controls</h2>
+      <p><strong>W:</strong> Move Forward</p>
+      <p><strong>S:</strong> Move Backward</p>
+      <p><strong>A:</strong> Move Left</p>
+      <p><strong>D:</strong> Move Right</p>
+      <p><strong>Space:</strong> Move Up</p>
+      <p><strong>Shift:</strong> Move Down</p>
+      <p><strong>Esc:</strong> Exit First Person View</p>
+    </div>
+    <script>
+      let scene, camera, renderer, controls;
+      let moveForward = false,
+        moveBackward = false,
+        moveLeft = false,
+        moveRight = false,
+        moveUp = false,
+        moveDown = false;
+      const speed = 10;
+
+      // Scene and Camera
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        2000
+      );
+      camera.position.set(60, 20, 0);
+      camera.rotation.y = Math.PI / 2; // Rotate the camera 90 degrees to the left
+
+      // Lights
+      var ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+
+      var directionalLight = new THREE.DirectionalLight(0xffeedd, 0.8);
+      directionalLight.position.set(50, 50, 50);
+      scene.add(directionalLight);
+
+      // Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setClearColor(0x87ceeb); // Sky blue
+      document.body.appendChild(renderer.domElement);
+
+      let cameraControlEnabled = false;
+
+      // Pointer Lock Controls
+      controls = new THREE.PointerLockControls(camera, renderer.domElement);
+      document.getElementById("startButton").addEventListener("click", () => {
+        controls.lock();
+        cameraControlEnabled = true;
+      });
+
+      document.getElementById("resetButton").addEventListener("click", () => {
+        camera.position.set(60, 20, 0); // Reset camera position
+        camera.rotation.set(0, Math.PI / 2, 0); // Reset camera rotation
+      });
+
+      // Keyboard Event Listeners
+      document.addEventListener("keydown", (event) => {
+        if (cameraControlEnabled) {
+          switch (event.key) {
+            case "w":
+              moveForward = true;
+              break;
+            case "s":
+              moveBackward = true;
+              break;
+            case "a":
+              moveLeft = true;
+              break;
+            case "d":
+              moveRight = true;
+              break;
+            case " ":
+              moveUp = true;
+              break;
+            case "Shift":
+              moveDown = true;
+              break;
+          }
+        }
+      });
+
+      document.addEventListener("keyup", (event) => {
+        if (cameraControlEnabled) {
+          switch (event.key) {
+            case "w":
+              moveForward = false;
+              break;
+            case "s":
+              moveBackward = false;
+              break;
+            case "a":
+              moveLeft = false;
+              break;
+            case "d":
+              moveRight = false;
+              break;
+            case " ":
+              moveUp = false;
+              break;
+            case "Shift":
+              moveDown = false;
+              break;
+          }
+        }
+      });
+
+      // Movement Logic
+      const velocity = new THREE.Vector3();
+      const direction = new THREE.Vector3();
+
+      // Animation Loop
+      const clock = new THREE.Clock();
+      function animate() {
+        const delta = clock.getDelta();
+        velocity.set(0, 0, 0);
+
+        if (moveForward) velocity.z -= speed * delta;
+        if (moveBackward) velocity.z += speed * delta;
+        if (moveLeft) velocity.x -= speed * delta;
+        if (moveRight) velocity.x += speed * delta;
+        if (moveUp) velocity.y += speed * delta;
+        if (moveDown) velocity.y -= speed * delta;
+
+        direction.copy(velocity).applyQuaternion(camera.quaternion);
+        controls.getObject().position.add(direction);
+
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+      }
+
+      animate();
+
+      // Resize Event
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // Load OBJ Model with Materials for Grass
+      let meshGrass = null;
+      const mtlLoaderGrass = new THREE.MTLLoader();
+      mtlLoaderGrass.load(
+        "10450_Rectangular_Grass_Patch_v1_iterations-2.mtl",
+        function (materials) {
+          materials.preload();
+          const objLoaderGrass = new THREE.OBJLoader();
+          objLoaderGrass.setMaterials(materials);
+          objLoaderGrass.load("rectangle-grass.obj", function (object) {
+            meshGrass = object;
+            // Rotate the grass to make it horizontal (flat on the X-Y plane)
+            meshGrass.rotation.x = -Math.PI / 2; // 90 degrees in radians
+            meshGrass.rotation.z = Math.PI; // 180 degrees to flip it upside down
+            // Position grass below the Rumah Adat model
+            meshGrass.position.set(0, 0, 0); // Adjust the Y position for ground placement
+            scene.add(meshGrass);
+          });
+        }
+      );
+
+      // Load OBJ Model with Materials for Rumah Adat 1
+      let meshRumahAdat1 = null;
+      const mtlLoaderRumahAdat1 = new THREE.MTLLoader();
+      mtlLoaderRumahAdat1.load("rumah adat.mtl", function (materials) {
+        materials.preload();
+        const objLoaderRumahAdat1 = new THREE.OBJLoader();
+        objLoaderRumahAdat1.setMaterials(materials);
+        objLoaderRumahAdat1.load("rumah adat.obj", function (object) {
+          meshRumahAdat1 = object;
+          meshRumahAdat1.position.set(0, 7.3, 0); // Adjust the Y position to move it up
+          scene.add(meshRumahAdat1);
+        });
+      });
+
+      // Load OBJ Model with Materials for Rumah Adat 2 (Rotated on Y-axis)
+      let meshRumahAdat2 = null;
+      const mtlLoaderRumahAdat2 = new THREE.MTLLoader();
+      mtlLoaderRumahAdat2.load("rumah adat.mtl", function (materials) {
+        materials.preload();
+        const objLoaderRumahAdat2 = new THREE.OBJLoader();
+        objLoaderRumahAdat2.setMaterials(materials);
+        objLoaderRumahAdat2.load("rumah adat.obj", function (object) {
+          meshRumahAdat2 = object;
+          meshRumahAdat2.position.set(10, 7.3, 25); // Adjust the Y position and place it at another position
+          meshRumahAdat2.rotation.y = Math.PI / 4; // Rotate by 45 degrees (π / 4)
+          scene.add(meshRumahAdat2);
+        });
+      });
+
+      // Load OBJ Model with Materials for Rumah Adat 2 (Rotated on Y-axis)
+      let meshRumahAdat3 = null;
+      const mtlLoaderRumahAdat3 = new THREE.MTLLoader();
+      mtlLoaderRumahAdat2.load("rumah adat.mtl", function (materials) {
+        materials.preload();
+        const objLoaderRumahAdat2 = new THREE.OBJLoader();
+        objLoaderRumahAdat2.setMaterials(materials);
+        objLoaderRumahAdat2.load("rumah adat.obj", function (object) {
+          meshRumahAdat3 = object;
+          meshRumahAdat3.position.set(10, 7.3, -25); // Adjust the Y position and place it at another position
+          meshRumahAdat3.rotation.y = -Math.PI / 4; // Rotate by 45 degrees (π / 4)
+          scene.add(meshRumahAdat3);
+        });
+      });
+    </script>
+  </body>
+</html>
